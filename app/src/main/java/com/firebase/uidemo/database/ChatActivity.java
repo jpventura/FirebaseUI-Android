@@ -14,6 +14,7 @@
 
 package com.firebase.uidemo.database;
 
+import android.databinding.ObservableMap.OnMapChangedCallback;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.RotateDrawable;
@@ -37,6 +38,7 @@ import android.widget.Toast;
 import com.firebase.ui.database.FirebaseRecyclerAdapter;
 import com.firebase.uidemo.R;
 import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
@@ -46,13 +48,19 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
 
+import br.com.firebase.ui.databinding.FirebaseArrayMap;
+
 @SuppressWarnings("LogConditional")
 public class ChatActivity extends AppCompatActivity implements FirebaseAuth.AuthStateListener {
+
     private static final String TAG = "RecyclerViewDemo";
 
     private FirebaseAuth mAuth;
     private DatabaseReference mRef;
     private DatabaseReference mChatRef;
+
+    private FirebaseArrayMap<String, Chat> mChatMap;
+
     private Button mSendButton;
     private EditText mMessageEdit;
 
@@ -60,6 +68,8 @@ public class ChatActivity extends AppCompatActivity implements FirebaseAuth.Auth
     private LinearLayoutManager mManager;
     private FirebaseRecyclerAdapter<Chat, ChatHolder> mRecyclerViewAdapter;
     private View mEmptyListView;
+
+    private OnChatMapChangedCallback mChatMapOnChatMapChangedCallback;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -77,6 +87,9 @@ public class ChatActivity extends AppCompatActivity implements FirebaseAuth.Auth
         mRef = FirebaseDatabase.getInstance().getReference();
         mChatRef = mRef.child("chats");
 
+        mChatMap = new ChatMap();
+        mChatMapOnChatMapChangedCallback = new OnChatMapChangedCallback();
+
         mSendButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -90,6 +103,13 @@ public class ChatActivity extends AppCompatActivity implements FirebaseAuth.Auth
                         if (databaseError != null) {
                             Log.e(TAG, "Failed to write message", databaseError.toException());
                         }
+                    }
+                });
+
+                mChatMap.create(chat).addOnSuccessListener(new OnSuccessListener<Chat>() {
+                    @Override
+                    public void onSuccess(Chat chat) {
+                        Log.i(TAG, chat.toString());
                     }
                 });
 
@@ -118,6 +138,18 @@ public class ChatActivity extends AppCompatActivity implements FirebaseAuth.Auth
         } else {
             attachRecyclerViewAdapter();
         }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        mChatMap.addOnMapChangedCallback(mChatMapOnChatMapChangedCallback);
+    }
+
+    @Override
+    protected void onPause() {
+        mChatMap.removeOnMapChangedCallback(mChatMapOnChatMapChangedCallback);
+        super.onPause();
     }
 
     @Override
@@ -297,4 +329,15 @@ public class ChatActivity extends AppCompatActivity implements FirebaseAuth.Auth
             mTextField.setText(text);
         }
     }
+
+    private static class OnChatMapChangedCallback extends OnMapChangedCallback<FirebaseArrayMap<String, Chat>, String, Chat> {
+
+        @Override
+        public void onMapChanged(FirebaseArrayMap<String, Chat> sender, String key) {
+            Log.e(TAG, key);
+            Log.e(TAG, sender.get(key).toString());
+        }
+
+    }
+
 }

@@ -15,14 +15,32 @@ android {
         versionName "1.0"
     }
 
+    signingConfigs {
+        debug {
+            storeFile rootProject.file('android.jks')
+            storePassword 'android'
+            keyAlias 'android_debug_key'
+            keyPassword 'android_debug'
+        }
+
+        release {
+            storeFile rootProject.file('android.jks')
+            storePassword 'android'
+            keyAlias 'android_release_key'
+            keyPassword 'android_debug'
+        }
+    }
+
     buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.debug
+        }
+
         release {
             minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-
-            // For the purposes of the sample, allow testing of a proguarded release build
-            // using the debug key
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
         }
     }
 }
